@@ -1,0 +1,201 @@
+-- Services
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+
+-- Create ScreenGui for the GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "LumberTycoonGUI"
+screenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Create Tabs
+local tabs = {
+    { name = "Teleport", gui = nil, active = true },
+    { name = "Stealer", gui = nil, active = false }
+}
+
+-- Create Main Frame for the GUI
+local mainFrame = Instance.new("Frame", screenGui)
+mainFrame.Size = UDim2.new(0.3, 0, 0.3, 0)
+mainFrame.Position = UDim2.new(0.01, 0, 0.01, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+mainFrame.BorderSizePixel = 0
+
+-- Create Resize UI Button
+local resizeButton = Instance.new("TextButton", mainFrame)
+resizeButton.Size = UDim2.new(0, 20, 0, 20)
+resizeButton.Position = UDim2.new(1, -20, 1, -20)
+resizeButton.Text = "+"
+resizeButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+resizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+resizeButton.BorderSizePixel = 0
+
+local resizing = false
+local lastMousePosition = Vector2.new()
+
+-- Function to update frame size
+local function updateSize(newSize)
+    mainFrame.Size = newSize
+end
+
+-- Mouse drag functionality for resizing
+resizeButton.MouseButton1Down:Connect(function()
+    resizing = true
+    lastMousePosition = Vector2.new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        if resizing then
+            local delta = input.Position - lastMousePosition
+            updateSize(mainFrame.Size + UDim2.new(0, delta.X, 0, delta.Y))
+            lastMousePosition = input.Position
+        end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        resizing = false
+    end
+end)
+
+-- Function to create a tab
+local function createTab(tabData)
+    local tabGui = Instance.new("Frame", mainFrame)
+    tabGui.Size = UDim2.new(1, 0, 1, 0)
+    tabGui.Visible = tabData.active
+    tabData.gui = tabGui
+
+    local titleLabel = Instance.new("TextLabel", tabGui)
+    titleLabel.Size = UDim2.new(1, 0, 0, 30)
+    titleLabel.Position = UDim2.new(0, 0, 0, 0)
+    titleLabel.Text = tabData.name
+    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleLabel.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
+    titleLabel.BorderSizePixel = 0
+    titleLabel.Font = Enum.Font.SourceSansBold
+    titleLabel.TextSize = 18
+
+    return tabGui
+end
+
+-- Create tabs
+for _, tabData in ipairs(tabs) do
+    tabData.gui = createTab(tabData)
+end
+
+-- Teleport Tab
+local teleportTab = tabs[1].gui
+
+-- Create Set Location Button in Teleport Tab
+local setLocationButton = Instance.new("TextButton", teleportTab)
+setLocationButton.Size = UDim2.new(0, 200, 0, 30)
+setLocationButton.Position = UDim2.new(0.5, -100, 0.2, 0)
+setLocationButton.Text = "Set Location"
+setLocationButton.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+setLocationButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+setLocationButton.BorderSizePixel = 0
+
+-- Create Teleport Button in Teleport Tab
+local teleportButton = Instance.new("TextButton", teleportTab)
+teleportButton.Size = UDim2.new(0, 200, 0, 30)
+teleportButton.Position = UDim2.new(0.5, -100, 0.4, 0)
+teleportButton.Text = "Teleport to Location"
+teleportButton.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+teleportButton.BorderSizePixel = 0
+
+-- Function to handle setting the location and teleporting
+local locationPosition = nil
+setLocationButton.MouseButton1Click:Connect(function()
+    locationPosition = Players.LocalPlayer.Character.HumanoidRootPart.Position
+    print("Location set to:", locationPosition)
+end)
+
+teleportButton.MouseButton1Click:Connect(function()
+    if locationPosition then
+        local player = Players.LocalPlayer
+        local radius = 10  -- Adjust radius as needed
+
+        -- Teleport player to the set location
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(locationPosition)
+        end
+
+        -- Disable collisions within the radius
+        local function disableCollisions(part)
+            if part:IsA("BasePart") then
+                local distance = (part.Position - player.Character.HumanoidRootPart.Position).magnitude
+                if distance <= radius then
+                    part.CanCollide = false
+                end
+            end
+        end
+
+        -- Iterate through all parts in workspace and disable collisions
+        for _, child in ipairs(Workspace:GetDescendants()) do
+            disableCollisions(child)
+        end
+    else
+        print("Location not set. Please set a location first.")
+    end
+end)
+
+-- Stealer Tab
+local stealerTab = tabs[2].gui
+
+-- Create Set Location Button in Stealer Tab (reuse the button)
+local setStealerLocationButton = Instance.new("TextButton", stealerTab)
+setStealerLocationButton.Size = UDim2.new(0, 200, 0, 30)
+setStealerLocationButton.Position = UDim2.new(0.5, -100, 0.2, 0)
+setStealerLocationButton.Text = "Set Stealer Location"
+setStealerLocationButton.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+setStealerLocationButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+setStealerLocationButton.BorderSizePixel = 0
+
+-- Create Teleport Button in Stealer Tab (reuse the button)
+local teleportToStealerButton = Instance.new("TextButton", stealerTab)
+teleportToStealerButton.Size = UDim2.new(0, 200, 0, 30)
+teleportToStealerButton.Position = UDim2.new(0.5, -100, 0.4, 0)
+teleportToStealerButton.Text = "Teleport to Stealer Location"
+teleportToStealerButton.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+teleportToStealerButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+teleportToStealerButton.BorderSizePixel = 0
+
+-- Function to handle setting the stealer location and teleporting
+local stealerLocationPosition = nil
+setStealerLocationButton.MouseButton1Click:Connect(function()
+    stealerLocationPosition = Players.LocalPlayer.Character.HumanoidRootPart.Position
+    print("Stealer location set to:", stealerLocationPosition)
+end)
+
+teleportToStealerButton.MouseButton1Click:Connect(function()
+    if stealerLocationPosition then
+        local player = Players.LocalPlayer
+        local radius = 10  -- Adjust radius as needed
+
+        -- Teleport player to the set stealer location
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(stealerLocationPosition)
+        end
+
+        -- Disable collisions within the radius
+        local function disableCollisions(part)
+            if part:IsA("BasePart") then
+                local distance = (part.Position - player.Character.HumanoidRootPart.Position).magnitude
+                if distance <= radius then
+                    part.CanCollide = false
+                end
+            end
+        end
+
+        -- Iterate through all parts in workspace and disable collisions
+        for _, child in ipairs(Workspace:GetDescendants()) do
+            disableCollisions(child)
+        end
+    else
+        print("Stealer location not set. Please set a location first.")
+    end
+end)
